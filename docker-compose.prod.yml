@@ -1,0 +1,54 @@
+services:
+  postgres:
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  redis:
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  backend:
+    build:
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+    deploy:
+      replicas: 3  # 3 instancje dla HA
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    build:
+      dockerfile: Dockerfile
+    restart: always
+
+  nginx:
+    ports:
+      - "80:80"
+      - "443:443"  # HTTPS
+    volumes:
+      - ./ssl:/etc/nginx/ssl:ro  # SSL certificates
+    restart: always

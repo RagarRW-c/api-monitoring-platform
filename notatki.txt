@@ -1,0 +1,299 @@
+# Struktura Projektu DevOps
+
+```
+api-monitoring-platform/
+├── backend/
+│   ├── src/
+│   │   ├── index.js
+│   │   ├── routes/
+│   │   │   └── health.js
+│   │   └── db/
+│   │       └── connection.js
+│   ├── Dockerfile
+│   ├── Dockerfile.dev
+│   ├── package.json
+│   └── .dockerignore
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx
+│   │   └── index.js
+│   ├── public/
+│   ├── Dockerfile
+│   ├── Dockerfile.dev
+│   ├── package.json
+│   └── .dockerignore
+├── nginx/
+│   ├── nginx.conf
+│   └── Dockerfile
+├── terraform/
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── outputs.tf
+│   ├── vpc.tf
+│   ├── ecs.tf
+│   └── rds.tf
+├── .github/
+│   └── workflows/
+│       ├── ci.yml
+│       └── cd.yml
+├── docker-compose.yml
+├── docker-compose.prod.yml
+├── .env.example
+└── README.md
+```
+
+---
+
+## 📝 Zadania do wykonania (w kolejności)
+
+### ETAP 1: Podstawowa konteneryzacja (2-3h)
+
+**Zadanie 1.1**: Stwórz backend API
+- [ ] Napisz prosty Express.js API z endpointami:
+  - `GET /health` - health check
+  - `GET /api/status` - pobiera dane z Redis
+  - `POST /api/logs` - zapisuje logi do PostgreSQL
+- [ ] Stwórz `Dockerfile` dla produkcji (multi-stage build)
+- [ ] Stwórz `Dockerfile.dev` dla development (z hot-reload)
+
+**Zadanie 1.2**: Stwórz frontend
+- [ ] Prosty React dashboard pokazujący status API
+- [ ] `Dockerfile` produkcyjny (build → nginx serve)
+- [ ] `Dockerfile.dev` z hot-reload
+
+**Zadanie 1.3**: Konfiguracja Nginx
+- [ ] Reverse proxy dla backend i frontend
+- [ ] Rate limiting
+- [ ] SSL/TLS termination (self-signed cert dla local)
+
+---
+
+### ETAP 2: Docker Compose (2h)
+
+**Zadanie 2.1**: `docker-compose.yml` dla development
+```yaml
+# Stwórz compose file z:
+# - backend (build z Dockerfile.dev)
+# - frontend (build z Dockerfile.dev)
+# - postgres (oficjalny image)
+# - redis (oficjalny image)
+# - nginx (custom config)
+# 
+# Skonfiguruj:
+# - volumes dla hot-reload
+# - networks (backend-network, frontend-network)
+# - health checks
+# - depends_on z conditions
+# - environment variables z .env
+```
+
+**Zadanie 2.2**: `docker-compose.prod.yml`
+- [ ] Używa production Dockerfiles
+- [ ] Brak volumes dla kodu
+- [ ] Resource limits (memory, CPU)
+- [ ] Restart policies
+
+**Zadania praktyczne**:
+- [ ] Uruchom lokalnie: `docker-compose up`
+- [ ] Przetestuj hot-reload w development
+- [ ] Sprawdź logi: `docker-compose logs -f backend`
+- [ ] Wejdź do kontenera: `docker-compose exec backend sh`
+
+---
+
+### ETAP 3: CI/CD z GitHub Actions (3h)
+
+**Zadanie 3.1**: Pipeline CI (`.github/workflows/ci.yml`)
+```yaml
+# Trigger: każdy push i PR
+# Jobs:
+# 1. Lint & Test backend
+# 2. Lint & Test frontend
+# 3. Build Docker images
+# 4. Scan vulnerabilities (Trivy)
+# 5. Push to Docker Hub/GitHub Registry
+```
+
+**Zadanie 3.2**: Pipeline CD (`.github/workflows/cd.yml`)
+```yaml
+# Trigger: push do main lub manual
+# Jobs:
+# 1. Deploy do staging (AWS ECS)
+# 2. Run smoke tests
+# 3. Manual approval
+# 4. Deploy do production
+# 5. Rollback mechanism
+```
+
+**Wyzwania**:
+- [ ] Użyj GitHub Secrets dla credentials
+- [ ] Implement Docker layer caching
+- [ ] Matrix builds dla różnych Node versions
+- [ ] Notifications (Slack/Discord) o statusie
+
+---
+
+### ETAP 4: Terraform - Infrastructure as Code (4-5h)
+
+**Zadanie 4.1**: Setup AWS (lub GCP)
+```hcl
+# terraform/main.tf
+# - VPC z public/private subnets
+# - Security Groups
+# - ECS Cluster
+# - Application Load Balancer
+# - RDS PostgreSQL
+# - ElastiCache Redis
+# - ECR repositories
+# - CloudWatch logs
+```
+
+**Zadanie 4.2**: Moduły Terraform
+- [ ] Stwórz reusable module dla ECS service
+- [ ] Variables dla różnych environments (staging/prod)
+- [ ] Remote state (S3 + DynamoDB lock)
+- [ ] Outputs z ważnymi danymi (ALB URL, DB endpoint)
+
+**Zadanie 4.3**: Deployment
+```bash
+# Wykonaj:
+terraform init
+terraform plan -var-file=staging.tfvars
+terraform apply -var-file=staging.tfvars
+```
+
+**Wyzwania zaawansowane**:
+- [ ] Auto-scaling dla ECS tasks
+- [ ] Blue-green deployment strategy
+- [ ] Backup policies dla RDS
+- [ ] Cost estimation z Infracost
+
+---
+
+### ETAP 5: Advanced (opcjonalnie, 3-4h)
+
+**Zadanie 5.1**: Monitoring & Observability
+- [ ] Dodaj Prometheus dla metryk
+- [ ] Grafana dashboards
+- [ ] Structured logging (winston/pino)
+- [ ] Distributed tracing (Jaeger)
+
+**Zadanie 5.2**: Security hardening
+- [ ] Non-root users w Dockerfile
+- [ ] Scan images z Trivy w CI
+- [ ] Secrets w AWS Secrets Manager
+- [ ] Network policies
+- [ ] WAF na ALB
+
+**Zadanie 5.3**: Performance
+- [ ] Redis caching strategy
+- [ ] Database connection pooling
+- [ ] CDN dla statycznych assetsów (CloudFront)
+- [ ] Gzip compression w Nginx
+
+---
+
+## 🎓 Czego się nauczysz:
+
+### Docker:
+- Multi-stage builds dla optymalizacji
+- Różnice dev vs prod Dockerfile
+- Docker networking (bridge, host, custom)
+- Volume management
+- Health checks i restart policies
+- .dockerignore best practices
+
+### Docker Compose:
+- Orchestracja multi-container apps
+- Service dependencies
+- Environment management
+- Profiles dla różnych środowisk
+- Override files
+
+### Terraform:
+- Provider configuration (AWS/GCP)
+- Resource management
+- State management
+- Modules i reusability
+- Workspaces dla environments
+- Data sources
+
+### GitHub Actions:
+- Workflow syntax
+- Jobs i steps
+- Secrets management
+- Caching strategies
+- Matrix builds
+- Custom actions
+
+### DevOps Best Practices:
+- Infrastructure as Code
+- Continuous Integration/Deployment
+- Immutable infrastructure
+- Configuration management
+- Monitoring i alerting
+
+---
+
+## 🚀 Quick Start
+
+```bash
+# 1. Clone i setup
+git clone <twoj-repo>
+cd api-monitoring-platform
+cp .env.example .env
+
+# 2. Local development
+docker-compose up -d
+
+# 3. Sprawdź czy działa
+curl http://localhost/api/health
+
+# 4. Zatrzymaj
+docker-compose down -v
+
+# 5. Production build test
+docker-compose -f docker-compose.prod.yml up
+```
+
+---
+
+## 💡 Tips & Tricks
+
+1. **Debugging**: Użyj `docker-compose logs -f [service]`
+2. **Clean up**: `docker system prune -a --volumes`
+3. **Build cache**: Użyj `DOCKER_BUILDKIT=1`
+4. **Secrets**: NIGDY nie commituj .env do git
+5. **Testing**: Test każdego etapu przed przejściem dalej
+
+---
+
+## 📊 Metryki sukcesu
+
+- [ ] Wszystkie kontenery startują bez błędów
+- [ ] Health checks są green
+- [ ] CI pipeline przechodzi na zielono
+- [ ] Aplikacja działa po deploy na AWS
+- [ ] Rollback działa prawidłowo
+- [ ] Monitoring pokazuje metryki
+- [ ] Koszty infrastruktury < $50/miesiąc
+
+---
+
+## 🔥 Bonus Challenges
+
+1. Dodaj Kubernetes (migracja z ECS)
+2. GitOps z ArgoCD
+3. Service mesh (Istio/Linkerd)
+4. Chaos engineering (Chaos Monkey)
+5. Multi-region deployment
+6. Disaster recovery plan
+
+---
+
+## 📚 Przydatne zasoby
+
+- Docker docs: https://docs.docker.com
+- Terraform AWS provider: https://registry.terraform.io/providers/hashicorp/aws
+- GitHub Actions: https://docs.github.com/en/actions
+- AWS ECS best practices: https://aws.amazon.com/ecs/
