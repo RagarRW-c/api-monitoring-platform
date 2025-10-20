@@ -4,4 +4,4 @@
 .env.prod
 secrets/
 *.pem
-*.key
+*.keynode_modules/
